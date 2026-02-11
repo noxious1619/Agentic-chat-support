@@ -37,6 +37,13 @@ model Order {
   createdAt      DateTime @default(now())
 }
 
+model Billing {
+  id             String   @id @default(uuid())
+  conversationId String
+  amount         Float
+  status         String
+  createdAt      DateTime @default(now())
+}
 
 enum Role {
   user

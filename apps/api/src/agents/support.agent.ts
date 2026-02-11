@@ -1,3 +1,11 @@
-export function supportAgent(message: string): string {
-  return `Support Agent: I can help you with general questions and app issues.`;
+import { getConversationHistory } from '../tools/conversation.tools.js'
+
+export async function supportAgent(
+  message: string,
+  conversationId: string
+): Promise<string> {
+
+  const history = await getConversationHistory(conversationId)
+
+  return `Support Agent: I can see ${history.length} messages in this conversation. How can I help you further?`
 }

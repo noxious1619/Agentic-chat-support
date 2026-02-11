@@ -1,15 +1,15 @@
 import { prisma } from './prisma.js'
 
 async function seed() {
-  await prisma.order.create({
+    await prisma.billing.create({
     data: {
       conversationId: 'persist-test',
-      status: 'shipped',
-      trackingNumber: 'TRK123456',
+      amount: 120,
+      status: 'paid',
     },
-  })
+})
 
-  console.log('Order seed inserted')
+  console.log('bill seed inserted');
 }
 
 seed()

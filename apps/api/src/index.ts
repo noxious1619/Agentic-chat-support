@@ -45,11 +45,11 @@ app.post('/api/chat/messages', async (c) => {
 
   let replyText = '';
   if (agentType === 'order') {
-    replyText = orderAgent(content);
+    replyText = await orderAgent(content, conversationId)
   } else if (agentType === 'billing') {
-    replyText = billingAgent(content);
+    replyText = await billingAgent(content, conversationId)
   } else {
-    replyText = supportAgent(content);
+    replyText = await supportAgent(content, conversationId );
   }
 
   // 3️⃣ Save agent message
