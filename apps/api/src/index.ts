@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import type { Message } from '@repo/shared';
+import {cors} from 'hono/cors';
+import  {stream} from 'hono/streaming';
 
 import { prisma } from './prisma.js';
 
@@ -10,6 +12,9 @@ import { orderAgent } from './agents/order.agent.js';
 import { billingAgent } from './agents/billing.agent.js';
 
 const app = new Hono();
+app.use('*', cors({
+  origin: 'http://localhost:3000',
+}))
 
 app.post('/api/chat/messages', async (c) => {
   const body = await c.req.json();
@@ -70,10 +75,16 @@ app.post('/api/chat/messages', async (c) => {
     },
   });
 
-  return c.json({
-    agentType,
-    reply: agentMessage,
-  });
+  return stream(c, async (stream) => {
+    const fullText = agentMessage.content
+    const words = fullText.split(' ')
+
+    for (const word of words) {
+      await stream.write(word + ' ')
+      await new Promise((res) => setTimeout(res, 80))
+    }
+  })
+
 });
 
 serve({
