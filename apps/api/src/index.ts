@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
-import { addMessage } from './store';
 import type { Message } from '@repo/shared';
+
+import { prisma } from './prisma.js';
 
 import { routeMessage } from './agents/router.js';
 import { supportAgent } from './agents/support.agent.js';
@@ -14,6 +15,14 @@ app.post('/api/chat/messages', async (c) => {
   const body = await c.req.json();
   const { conversationId, content } = body;
 
+  // 1️⃣ Ensure conversation exists (DB version of getConversation)
+  await prisma.conversation.upsert({
+    where: { id: conversationId },
+    update: {},
+    create: { id: conversationId },
+  });
+
+  // 2️⃣ Save user message
   const userMessage: Message = {
     id: crypto.randomUUID(),
     role: 'user',
@@ -21,13 +30,20 @@ app.post('/api/chat/messages', async (c) => {
     createdAt: Date.now(),
   };
 
-  addMessage(conversationId, userMessage);
+  await prisma.message.create({
+    data: {
+      id: userMessage.id,
+      conversationId,
+      role: 'user',
+      content: userMessage.content,
+      createdAt: new Date(userMessage.createdAt),
+    },
+  });
 
-  // 🔥 STEP 3 LOGIC STARTS HERE
+  // 🔥 STEP 3 LOGIC (UNCHANGED)
   const agentType = routeMessage(content);
 
   let replyText = '';
-
   if (agentType === 'order') {
     replyText = orderAgent(content);
   } else if (agentType === 'billing') {
@@ -36,6 +52,7 @@ app.post('/api/chat/messages', async (c) => {
     replyText = supportAgent(content);
   }
 
+  // 3️⃣ Save agent message
   const agentMessage: Message = {
     id: crypto.randomUUID(),
     role: 'agent',
@@ -43,7 +60,15 @@ app.post('/api/chat/messages', async (c) => {
     createdAt: Date.now(),
   };
 
-  addMessage(conversationId, agentMessage);
+  await prisma.message.create({
+    data: {
+      id: agentMessage.id,
+      conversationId,
+      role: 'agent',
+      content: agentMessage.content,
+      createdAt: new Date(agentMessage.createdAt),
+    },
+  });
 
   return c.json({
     agentType,
